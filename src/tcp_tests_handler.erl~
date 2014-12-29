@@ -1,0 +1,8 @@
+-module(tests_tcp_server).
+
+-export([handler/1]).
+
+%% Функция обрабатывает приходящие пакеты
+handler(Socket) ->
+    io:format("DEBUG>> NewConn ~p~n", [Socket]),
+    ok.

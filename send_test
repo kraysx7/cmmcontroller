@@ -1,0 +1,37 @@
+#!/usr/local/bin/escript
+%%! -setcookie FOOBAR
+
+main(Params) ->
+    %%io:format("Params >~p<~n", [Params]),
+	Host = "192.168.10.100",
+	Port = 20202,
+	PacketNum = 1,
+
+    [SNodeId, STestId, STestStatus, TestValue] = Params,
+    NodeId     = lst_to_integer(SNodeId),
+    TestId     = lst_to_integer(STestId),
+    TestStatus = lst_to_integer(STestStatus),
+    case {NodeId, TestId, TestStatus} of
+        {badarg, _, _} -> io:format("SEND ERROR: NodeNum is not numeric!~n");
+        {_, badarg, _} -> io:format("SEND ERROR: TestId is not numeric!~n");
+        {_, _, badarg} -> io:format("SEND ERROR: TestStatus is not numeric!~n");
+        {NodeId, TestId, TestStatus} -> 
+            case gen_tcp:connect(Host, Port, [binary, {packet, 2}]) of
+                {ok, Sock} ->
+                    TestValueBin = list_to_binary(TestValue),
+                    ValLen = byte_size(TestValueBin),
+                    ok = gen_tcp:send(Sock, <<PacketNum:16, NodeId:32, TestId:32, TestStatus:32, ValLen:16, TestValueBin:ValLen/binary>>),
+                    ok = gen_tcp:close(Sock),
+                    io:format("SEND TEST OK!~n", []);
+                R -> io:format("SEND TEST ERR! ~p~n", [R])
+            end
+    end.
+
+
+lst_to_integer(List) when is_list(List) ->
+    case re:run(List, "^[0-9]*$") of
+	    {match, _} -> erlang:list_to_integer(List);
+	    nomatch -> badarg	  
+    end;
+
+lst_to_integer(_) -> badarg.
